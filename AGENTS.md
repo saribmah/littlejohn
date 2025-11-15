@@ -2,13 +2,14 @@
 
 ## Build/Lint/Test Commands
 - **Backend**: `cd packages/backend && bun run check` (type-check + lint), `bun run lint:fix`, `bun run dev`
-- **Frontend**: `cd packages/frontend && bun run check`, `bun run build`, `bun run dev`
+- **Frontend**: `cd packages/frontend && bun run check`, `bun run build`, `bun run dev` (uses Vite)
 - **Test**: `bun test` for all tests, `bun test <file-path>` for single test file
 - **Database**: `cd packages/backend && bun run db:migrate` (dev), `bun run db:push` (schema push), `bun run db:studio`
 
 ## Runtime & Tools
 - **Always use Bun**: Use `bun` instead of node/npm/pnpm/yarn. Bun auto-loads `.env` files.
-- **No unnecessary packages**: Use `Bun.serve()` not Express, `bun:sqlite` not better-sqlite3, built-in WebSocket not `ws`
+- **Frontend**: Vite dev server for frontend, Bun for backend. Static assets go in `packages/frontend/public/`
+- **No unnecessary packages**: Backend uses `Bun.serve()` not Express, `bun:sqlite` not better-sqlite3, built-in WebSocket not `ws`
 
 ## Code Style
 - **TypeScript**: Strict mode enabled. Use explicit types, avoid `any`. Enable `noUncheckedIndexedAccess`.

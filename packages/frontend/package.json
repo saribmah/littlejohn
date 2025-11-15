@@ -6,9 +6,9 @@
   "main": "src/index.tsx",
   "module": "src/index.tsx",
   "scripts": {
-    "dev": "bun --hot server.ts",
-    "start": "NODE_ENV=production bun server.ts",
-    "build": "bun run build.ts",
+    "dev": "bun vite",
+    "start": "bun vite preview",
+    "build": "bun vite build",
     "type-check": "tsc --noEmit",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
@@ -32,10 +32,13 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
     "@types/bun": "latest",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.1.1",
     "oxlint": "^1.28.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2"
   }
 }
