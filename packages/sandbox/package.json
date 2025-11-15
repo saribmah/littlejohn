@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "start": "bun run src/index.ts",
+    "test:init": "bun run test-init.ts",
     "client": "bun run examples/client-example.ts",
     "test:browser-tool": "bun run examples/test-browser-tool.ts",
     "postinstall": "playwright install chromium"
