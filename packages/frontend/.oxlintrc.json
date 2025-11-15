@@ -1,0 +1,21 @@
+{
+  "rules": {
+    "react": "warn",
+    "react-perf": "warn",
+    "unicorn": "warn",
+    "typescript": "warn",
+    "import": "warn"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "globals": {
+    "React": "readonly"
+  }
+}

@@ -39,9 +39,9 @@ export const env = {
   DATABASE_URL: process.env.DATABASE_URL || '',
   REDIS_URL: process.env.REDIS_URL || '',
 
-  // Security
-  JWT_SECRET: process.env.JWT_SECRET || '',
-  ENCRYPTION_KEY: process.env.ENCRYPTION_KEY || '',
+  // Better Auth
+  BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || '',
+  BETTER_AUTH_URL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
 
   // Agent
   DEFAULT_AGENT_MODE: process.env.DEFAULT_AGENT_MODE || 'co-pilot',

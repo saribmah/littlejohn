@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "typescript": "warn",
+    "import": "warn",
+    "unicorn": "warn"
+  },
+  "env": {
+    "node": true,
+    "es2021": true
+  }
+}

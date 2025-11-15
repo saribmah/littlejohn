@@ -28,6 +28,21 @@ Run in production mode:
 bun run start
 ```
 
+Type check:
+```bash
+bun run type-check
+```
+
+Lint with oxlint:
+```bash
+bun run lint
+```
+
+Run all checks (type-check + lint):
+```bash
+bun run check
+```
+
 The server will start on `http://localhost:3000` (or the port specified in `.env`)
 
 ## API Endpoints
@@ -96,11 +111,42 @@ Key variables:
 - Market data API keys
 - LLM API keys (OpenAI, Anthropic)
 
+## Database Setup
+
+This project uses Prisma with PostgreSQL.
+
+1. **Start PostgreSQL** (via Docker):
+   ```bash
+   docker run --name littlejohn-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=littlejohn -p 5432:5432 -d postgres
+   ```
+
+2. **Set DATABASE_URL** in `.env`:
+   ```bash
+   DATABASE_URL=postgresql://postgres:password@localhost:5432/littlejohn
+   ```
+
+3. **Push database schema**:
+   ```bash
+   bun run db:push
+   ```
+
+4. **Generate Prisma client**:
+   ```bash
+   bun run db:generate
+   ```
+
+## Authentication
+
+The `/api/auth` endpoints are powered by Better Auth with email/password support.
+
+See `src/features/auth/README.md` for detailed authentication documentation.
+
 ## Next Steps
 
+- [x] Set up authentication with Better Auth
+- [x] Configure Prisma database
 - [ ] Implement broker adapter interfaces
-- [ ] Add authentication middleware
-- [ ] Set up database connection
+- [ ] Add authentication middleware for protected routes
 - [ ] Implement portfolio routes
 - [ ] Add agent routes
 - [ ] Integrate market data services
