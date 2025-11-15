@@ -19,11 +19,9 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  accounts Account[]
-  sessions Session[]
-
-  shouldOnboard  Boolean?
-  completedSteps String?
+  accounts          Account[]
+  sessions          Session[]
+  onboardingProfile OnboardingProfile?
 
   @@map("user")
 }
@@ -72,4 +70,27 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@map("verification")
+}
+
+model OnboardingProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  completed Boolean  @default(false)
+  
+  // Robinhood linking
+  robinhoodEmail String?
+  robinhoodLinked Boolean @default(false)
+  
+  // Investment preferences
+  goal       String? // fast, steady, experiment, risk, balanced
+  riskLevel  String? // low, medium, high
+  period     Int?    // 6, 24, 48 months
+  exclusions String? // JSON array of exclusions
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_profile")
 }

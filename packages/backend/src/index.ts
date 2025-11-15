@@ -10,6 +10,7 @@ import { portfolioRoutes } from './features/portfolio';
 import { agentRoutes } from './features/agent';
 import { brokersRoutes } from './features/brokers';
 import { newsRoutes } from './features/news';
+import { onboardingRoutes } from './features/onboarding';
 
 const app = new Hono();
 
@@ -20,6 +21,7 @@ app.use('*', cors());
 // Mount feature routes
 app.route('/health', healthRoutes);
 app.route('/api/auth', authRoutes);
+app.route('/api/onboarding', onboardingRoutes);
 app.route('/api/portfolio', portfolioRoutes);
 app.route('/api/agent', agentRoutes);
 app.route('/api/brokers', brokersRoutes);

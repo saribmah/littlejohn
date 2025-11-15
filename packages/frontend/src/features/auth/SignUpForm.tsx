@@ -1,19 +1,53 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card } from '../../components/ui/card';
+import { authClient } from './client';
 import { useAuthStore } from './store';
 
 export function SignUpForm() {
+  const navigate = useNavigate();
+  const { setUser } = useAuthStore();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signup, isLoading, error, clearError } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
-    await signup(email, password, name);
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const result = await authClient.signUp.email({
+        email,
+        password,
+        name,
+      });
+
+      if (result.error) {
+        setError(result.error.message || 'Signup failed');
+        setIsLoading(false);
+        return;
+      }
+
+      // Update auth store with user data
+      if (result.data?.user) {
+        setUser({
+          id: result.data.user.id,
+          email: result.data.user.email,
+          name: result.data.user.name || undefined,
+        });
+      }
+
+      // New users always go to onboarding
+      navigate('/onboarding');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Signup failed');
+      setIsLoading(false);
+    }
   };
 
   return (
