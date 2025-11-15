@@ -7,7 +7,6 @@ import { tool } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 import { BrowserTabs } from '../../browser/tabs';
 
-let currentSessionID = 'default';
 
 export const browserCreateTabTool = tool(
   'browser-create-tab',
@@ -59,6 +58,3 @@ export const browserCreateTabTool = tool(
   }
 );
 
-export function setSessionID(sessionID: string) {
-  currentSessionID = sessionID;
-}

@@ -10,7 +10,6 @@ import { DOMSampler } from '../../browser/dom-sampler';
 import { Extractor } from '../../browser/extractor';
 import { SnapshotStorage } from '../../browser/snapshot-storage';
 
-let currentSessionID = 'default';
 
 /**
  * Calculate smart default token limit based on estimated page size
@@ -62,8 +61,8 @@ export const browserGetDOMSnapshotTool = tool(
     try {
       // Get the tab to extract DOM from
       const tab = args.tabId
-        ? await BrowserTabs.getTab(currentSessionID, args.tabId)
-        : await BrowserTabs.getTab(currentSessionID); // Gets active tab
+        ? await BrowserTabs.getTab(args.tabId)
+        : await BrowserTabs.getTab(); // Gets active tab
 
       if (!tab) {
         throw new Error(
@@ -171,7 +170,7 @@ export const browserGetDOMSnapshotTool = tool(
       };
 
       // Store snapshot for later use by action tools
-      SnapshotStorage.store(currentSessionID, snapshot);
+      SnapshotStorage.store(snapshot);
 
       // Format element list for output
       const elementList = snapshot.elements
@@ -230,6 +229,3 @@ export const browserGetDOMSnapshotTool = tool(
   }
 );
 
-export function setSessionID(sessionID: string) {
-  currentSessionID = sessionID;
-}

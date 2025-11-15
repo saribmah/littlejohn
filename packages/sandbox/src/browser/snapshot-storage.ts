@@ -31,44 +31,36 @@ export namespace SnapshotStorage {
     }
   }
 
-  // Storage: sessionId -> snapshotId -> Snapshot
-  const storage = new Map<string, Map<string, Snapshot>>()
+  // Single storage instance - snapshots by ID
+  const storage = new Map<string, Snapshot>()
 
-  // Max snapshots per session
+  // Max snapshots
   const MAX_SNAPSHOTS = 3
 
   /**
-   * Store a snapshot for a session
+   * Store a snapshot
    */
-  export function store(sessionId: string, snapshot: Snapshot): string {
+  export function store(snapshot: Snapshot): string {
     log.info("storing snapshot", {
-      sessionId,
       snapshotId: snapshot.snapshotId,
       elementCount: snapshot.elements.length,
     })
 
-    // Get or create session storage
-    let sessionStorage = storage.get(sessionId)
-    if (!sessionStorage) {
-      sessionStorage = new Map()
-      storage.set(sessionId, sessionStorage)
-    }
-
     // Add snapshot
-    sessionStorage.set(snapshot.snapshotId, snapshot)
+    storage.set(snapshot.snapshotId, snapshot)
 
     // Expire old snapshots if needed
-    if (sessionStorage.size > MAX_SNAPSHOTS) {
-      const snapshots = Array.from(sessionStorage.values())
+    if (storage.size > MAX_SNAPSHOTS) {
+      const snapshots = Array.from(storage.values())
         .sort((a, b) => b.createdAt - a.createdAt) // newest first
 
       // Keep only the newest MAX_SNAPSHOTS
       const toKeep = new Set(snapshots.slice(0, MAX_SNAPSHOTS).map(s => s.snapshotId))
 
-      for (const [id, snap] of sessionStorage.entries()) {
+      for (const [id,] of storage.entries()) {
         if (!toKeep.has(id)) {
-          sessionStorage.delete(id)
-          log.info("expired old snapshot", { sessionId, snapshotId: id })
+          storage.delete(id)
+          log.info("expired old snapshot", { snapshotId: id })
         }
       }
     }
@@ -79,21 +71,14 @@ export namespace SnapshotStorage {
   /**
    * Get a snapshot by ID
    */
-  export function get(sessionId: string, snapshotId: string): Snapshot | null {
-    const sessionStorage = storage.get(sessionId)
-    if (!sessionStorage) {
-      log.warn("session not found", { sessionId })
-      return null
-    }
-
-    const snapshot = sessionStorage.get(snapshotId)
+  export function get(snapshotId: string): Snapshot | null {
+    const snapshot = storage.get(snapshotId)
     if (!snapshot) {
-      log.warn("snapshot not found", { sessionId, snapshotId })
+      log.warn("snapshot not found", { snapshotId })
       return null
     }
 
     log.info("retrieved snapshot", {
-      sessionId,
       snapshotId,
       elementCount: snapshot.elements.length,
     })
@@ -102,19 +87,15 @@ export namespace SnapshotStorage {
   }
 
   /**
-   * Get element from snapshot by snapId
+   * Get an element from a snapshot by its snapId
    */
-  export function getElement(
-    sessionId: string,
-    snapshotId: string,
-    snapId: string
-  ): SnapshotElement | null {
-    const snapshot = get(sessionId, snapshotId)
+  export function getElement(snapshotId: string, snapId: string): SnapshotElement | null {
+    const snapshot = get(snapshotId)
     if (!snapshot) return null
 
-    const element = snapshot.elements.find(e => e.snapId === snapId)
+    const element = snapshot.elements.find(el => el.snapId === snapId)
     if (!element) {
-      log.warn("element not found in snapshot", { sessionId, snapshotId, snapId })
+      log.warn("element not found in snapshot", { snapshotId, snapId })
       return null
     }
 
@@ -122,34 +103,24 @@ export namespace SnapshotStorage {
   }
 
   /**
-   * Clear all snapshots for a session
+   * Clear all snapshots
    */
-  export function clear(sessionId: string): void {
-    const sessionStorage = storage.get(sessionId)
-    if (sessionStorage) {
-      log.info("clearing snapshots", { sessionId, count: sessionStorage.size })
-      storage.delete(sessionId)
-    }
+  export function clear(): void {
+    log.info("clearing snapshots", { count: storage.size })
+    storage.clear()
   }
 
   /**
-   * Get all snapshot IDs for a session (for debugging)
+   * Get all snapshot IDs (for debugging)
    */
-  export function list(sessionId: string): string[] {
-    const sessionStorage = storage.get(sessionId)
-    if (!sessionStorage) return []
-    return Array.from(sessionStorage.keys())
+  export function list(): string[] {
+    return Array.from(storage.keys())
   }
 
   /**
    * Get storage stats (for debugging)
    */
   export function stats() {
-    const sessions = storage.size
-    let totalSnapshots = 0
-    for (const sessionStorage of storage.values()) {
-      totalSnapshots += sessionStorage.size
-    }
-    return { sessions, totalSnapshots }
+    return { snapshots: storage.size }
   }
 }

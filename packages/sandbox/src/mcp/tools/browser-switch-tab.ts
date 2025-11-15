@@ -7,7 +7,6 @@ import { tool } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 import { BrowserTabs } from '../../browser/tabs';
 
-let currentSessionID = 'default';
 
 export const browserSwitchTabTool = tool(
   'browser-switch-tab',
@@ -19,10 +18,10 @@ export const browserSwitchTabTool = tool(
   },
   async (args) => {
     try {
-      await BrowserTabs.switchTab(currentSessionID, args.tabId);
+      await BrowserTabs.switchTab(args.tabId);
 
       // Get the tab info
-      const tab = await BrowserTabs.getTab(currentSessionID, args.tabId);
+      const tab = await BrowserTabs.getTab(args.tabId);
       if (!tab) {
         throw new Error("Failed to get tab info after switching");
       }
@@ -57,6 +56,3 @@ export const browserSwitchTabTool = tool(
   }
 );
 
-export function setSessionID(sessionID: string) {
-  currentSessionID = sessionID;
-}

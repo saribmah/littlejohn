@@ -5,7 +5,6 @@
 
 // Core browser management exports
 export { BrowserLauncher } from './launcher';
-export { BrowserConnection } from './connection';
 export { BrowserTabs } from './tabs';
 export { BrowserStealth } from './stealth';
 

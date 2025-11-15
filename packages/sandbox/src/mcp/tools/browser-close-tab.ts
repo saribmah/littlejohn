@@ -7,7 +7,6 @@ import { tool } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 import { BrowserTabs } from '../../browser/tabs';
 
-let currentSessionID = 'default';
 
 export const browserCloseTabTool = tool(
   'browser-close-tab',
@@ -21,7 +20,7 @@ export const browserCloseTabTool = tool(
   async (args) => {
     try {
       // Get tab info before closing
-      const tab = await BrowserTabs.getTab(currentSessionID, args.tabId);
+      const tab = await BrowserTabs.getTab(args.tabId);
       if (!tab) {
         throw new Error(`Tab ${args.tabId} not found`);
       }
@@ -36,8 +35,8 @@ export const browserCloseTabTool = tool(
       await BrowserTabs.closeTab(currentSessionID, args.tabId);
 
       // Get the new active tab
-      const activeTabId = await BrowserTabs.getActiveTabId(currentSessionID);
-      const remainingTabs = await BrowserTabs.listTabs(currentSessionID);
+      const activeTabId = await BrowserTabs.getActiveTabId();
+      const remainingTabs = await BrowserTabs.listTabs();
 
       const output =
         `Successfully closed tab:\n\n` +
@@ -70,6 +69,3 @@ export const browserCloseTabTool = tool(
   }
 );
 
-export function setSessionID(sessionID: string) {
-  currentSessionID = sessionID;
-}

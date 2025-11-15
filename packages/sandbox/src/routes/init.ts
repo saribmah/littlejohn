@@ -4,7 +4,7 @@
  */
 
 import type { Context } from 'hono';
-import { BrowserLauncher, BrowserConnection, BrowserTabs } from '../browser';
+import { BrowserLauncher, BrowserTabs } from '../browser';
 import { Log } from '../utils';
 import type { InitRequest } from '../types';
 
@@ -14,21 +14,15 @@ export async function handleInit(c: Context) {
   try {
     const body = await c.req.json() as InitRequest;
     const { sessionID, userId, options = {} } = body;
-    
-    // Validate required fields
-    if (!sessionID) {
-      return c.json({
-        error: 'sessionID is required',
-      }, 400);
-    }
 
     log.info('initializing sandbox', { sessionID, userId, options });
     
     // 1. Launch browser with stealth mode enabled (for Robinhood)
+    // This also connects via CDP automatically
     const port = options.browserPort || 9222;
     const headless = options.headless ?? false; // Default to headed for stealth
     
-    log.info('launching browser', { sessionID, port, headless, stealth: true });
+    log.info('launching browser with CDP', { port, headless, stealth: true });
     
     const browser = await BrowserLauncher.launch({
       port,
@@ -37,41 +31,26 @@ export async function handleInit(c: Context) {
       userDataDir: options.userDataDir,
     });
     
-    log.info('browser launched', { 
-      sessionID, 
+    log.info('browser launched and connected', { 
       port: browser.port, 
-      pid: browser.pid 
+      pid: browser.pid,
+      target: browser.target 
     });
     
-    // 2. Connect to the browser via CDP
-    log.info('connecting to browser', { sessionID, port });
+    // 2. Initialize tab management
+    log.info('initializing tab management');
     
-    const connection = await BrowserConnection.connect({
-      sessionID,
-      host: 'localhost',
-      port,
-    });
+    await BrowserTabs.initialize();
     
-    log.info('browser connection established', { 
-      sessionID, 
-      target: connection.target 
-    });
-    
-    // 3. Initialize tab management
-    log.info('initializing tab management', { sessionID });
-    
-    await BrowserTabs.initialize(sessionID);
-    
-    const tabs = await BrowserTabs.listTabs(sessionID);
-    const activeTabId = await BrowserTabs.getActiveTabId(sessionID);
+    const tabs = await BrowserTabs.listTabs();
+    const activeTabId = await BrowserTabs.getActiveTabId();
     
     log.info('tab management initialized', { 
-      sessionID, 
       tabCount: tabs.length,
       activeTabId 
     });
     
-    // 4. Return session details
+    // 3. Return session details
     return c.json({
       status: 'success',
       message: 'Sandbox initialized successfully',

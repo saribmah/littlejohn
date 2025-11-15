@@ -9,7 +9,6 @@ import { BrowserTabs } from '../../browser/tabs';
 import { SnapshotStorage } from '../../browser/snapshot-storage';
 import { Resolver } from '../../browser/resolver';
 
-let currentSessionID = 'default';
 
 export const browserTypeTool = tool(
   'browser-type',
@@ -66,8 +65,8 @@ export const browserTypeTool = tool(
     try {
       // Get the tab to interact with
       const tab = args.tabId
-        ? await BrowserTabs.getTab(currentSessionID, args.tabId)
-        : await BrowserTabs.getTab(currentSessionID);
+        ? await BrowserTabs.getTab(args.tabId)
+        : await BrowserTabs.getTab();
 
       if (!tab) {
         throw new Error(
@@ -78,7 +77,7 @@ export const browserTypeTool = tool(
       }
 
       // Get snapshot element
-      const element = SnapshotStorage.getElement(currentSessionID, args.snapshotId, args.snapId);
+      const element = SnapshotStorage.getElement(args.snapshotId, args.snapId);
       if (!element) {
         throw new Error(
           `Element not found in snapshot. ` +
@@ -423,6 +422,3 @@ if (${args.pressEnter}) {
   }
 );
 
-export function setSessionID(sessionID: string) {
-  currentSessionID = sessionID;
-}

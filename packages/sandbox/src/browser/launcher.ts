@@ -1,6 +1,6 @@
 import { spawn, type Subprocess } from "bun"
+import CDP from "chrome-remote-interface"
 import { Log } from "../utils"
-import { Instance } from "../project"
 import { BrowserStealth } from "./stealth"
 
 export namespace BrowserLauncher {
@@ -14,32 +14,18 @@ export namespace BrowserLauncher {
     args?: string[]
   }
 
-  export interface BrowserProcess {
+  export interface BrowserInstance {
     process: Subprocess
     port: number
     pid: number
+    cdp: CDP.Client     // CDP connection
+    target: string      // Target ID
   }
 
-  export const state = Instance.state(
-    () => {
-      const browsers = new Map<number, BrowserProcess>()
-      return { browsers }
-    },
-    async (state) => {
-      // Cleanup: kill all browser processes
-      for (const [port, browser] of state.browsers) {
-        try {
-          browser.process.kill()
-          log.info("browser killed", { port, pid: browser.pid })
-        } catch (error) {
-          log.error("failed to kill browser", { port, pid: browser.pid, error })
-        }
-      }
-      state.browsers.clear()
-    }
-  )
+  // Single browser instance with CDP connection
+  let browserInstance: BrowserInstance | null = null
 
-  export async function launch(options: LaunchOptions = {}): Promise<BrowserProcess> {
+  export async function launch(options: LaunchOptions = {}): Promise<BrowserInstance> {
     const port = options.port || 9222
 
     // If stealth mode is enabled, force headed mode (headless is more detectable)
@@ -47,11 +33,10 @@ export namespace BrowserLauncher {
 
     log.info("launching browser", { port, headless, stealth: options.stealth })
 
-    // Check if browser already running on this port
-    const existing = state().browsers.get(port)
-    if (existing) {
-      log.info("browser already running on port", { port })
-      return existing
+    // Check if browser already running
+    if (browserInstance) {
+      log.info("browser already running", { port: browserInstance.port })
+      return browserInstance
     }
 
     // Use a temporary user data directory if none specified
@@ -136,46 +121,120 @@ export namespace BrowserLauncher {
         })).catch(() => {})
       }
 
-      const browser: BrowserProcess = {
-        process,
-        port,
-        pid: process.pid,
-      }
-
-      state().browsers.set(port, browser)
-      log.info("browser launched", { port, pid: process.pid, headless, userDataDir })
+      log.info("browser launched, connecting via CDP", { port, pid: process.pid, headless, userDataDir })
 
       // Wait a bit for Chrome to start
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      return browser
+      // Connect to browser via CDP with retry logic
+      const maxRetries = 10
+      const retryDelay = 500
+      let lastError: Error | undefined
+      let cdpClient: CDP.Client | undefined
+      let targetId: string | undefined
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          // Get list of targets
+          const targets = await CDP.List({ host: 'localhost', port })
+          log.info("available targets", { count: targets.length, attempt })
+
+          // Find the first page target
+          const pageTarget = targets.find((t) => t.type === "page")
+          if (!pageTarget) {
+            throw new Error("No browser page found")
+          }
+          targetId = pageTarget.id
+
+          // Connect to the target
+          cdpClient = await CDP({ host: 'localhost', port, target: targetId })
+
+          // Enable required domains
+          await cdpClient.Page.enable()
+          await cdpClient.Runtime.enable()
+          await cdpClient.Network.enable()
+
+          // Inject stealth scripts if stealth mode enabled
+          if (options.stealth) {
+            try {
+              await BrowserStealth.maskAutomation(cdpClient)
+              log.info("stealth scripts injected")
+            } catch (error) {
+              log.warn("failed to inject stealth scripts, continuing anyway", { error })
+            }
+          }
+
+          log.info("CDP connected successfully", { target: targetId, attempt })
+          break
+        } catch (error) {
+          lastError = error as Error
+          if (attempt < maxRetries) {
+            log.info("CDP connection attempt failed, retrying", { attempt, maxRetries, delay: retryDelay })
+            await new Promise(resolve => setTimeout(resolve, retryDelay))
+          }
+        }
+      }
+
+      if (!cdpClient || !targetId) {
+        // Kill the browser process since we couldn't connect
+        process.kill()
+        throw new Error(
+          `Failed to connect to browser via CDP after ${maxRetries} attempts. Last error: ${lastError?.message}`
+        )
+      }
+
+      browserInstance = {
+        process,
+        port,
+        pid: process.pid,
+        cdp: cdpClient,
+        target: targetId,
+      }
+
+      log.info("browser fully initialized", { port, pid: process.pid, target: targetId })
+
+      return browserInstance
     } catch (error) {
       log.error("failed to launch browser", { error, chromePath })
       throw new Error(`Failed to launch Chrome at ${chromePath}: ${error}`)
     }
   }
 
-  export async function kill(port: number): Promise<void> {
-    const browser = state().browsers.get(port)
-    if (!browser) {
-      throw new Error(`No browser running on port ${port}`)
+  export async function kill(): Promise<void> {
+    if (!browserInstance) {
+      throw new Error("No browser running")
     }
 
     try {
-      browser.process.kill()
-      state().browsers.delete(port)
-      log.info("browser killed", { port, pid: browser.pid })
+      // Close CDP connection first
+      await browserInstance.cdp.close()
+      log.info("CDP connection closed")
+      
+      // Kill browser process
+      browserInstance.process.kill()
+      log.info("browser killed", { port: browserInstance.port, pid: browserInstance.pid })
+      browserInstance = null
     } catch (error) {
-      log.error("failed to kill browser", { port, pid: browser.pid, error })
+      log.error("failed to kill browser", { error })
       throw error
     }
   }
 
-  export async function list(): Promise<BrowserProcess[]> {
-    return Array.from(state().browsers.values())
+  export async function get(): Promise<BrowserInstance | null> {
+    return browserInstance
   }
 
-  export async function get(port: number): Promise<BrowserProcess | undefined> {
-    return state().browsers.get(port)
+  export async function getCDP(): Promise<CDP.Client> {
+    if (!browserInstance) {
+      throw new Error("No browser running. Call launch() first.")
+    }
+    return browserInstance.cdp
+  }
+
+  export async function getTarget(): Promise<string> {
+    if (!browserInstance) {
+      throw new Error("No browser running. Call launch() first.")
+    }
+    return browserInstance.target
   }
 }

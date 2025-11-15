@@ -7,8 +7,6 @@ import { tool } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 import { BrowserTabs } from '../../browser/tabs';
 
-let currentSessionID = 'default';
-
 export const browserNavigateTool = tool(
   'browser-navigate',
   "Navigate to a URL in the browser. " +
@@ -44,8 +42,8 @@ export const browserNavigateTool = tool(
       
       // Get the tab to navigate in
       const tab = args.tabId
-        ? await BrowserTabs.getTab(currentSessionID, args.tabId)
-        : await BrowserTabs.getTab(currentSessionID); // Gets active tab
+        ? await BrowserTabs.getTab(args.tabId)
+        : await BrowserTabs.getTab(); // Gets active tab
 
       if (!tab) {
         throw new Error(
@@ -128,7 +126,3 @@ export const browserNavigateTool = tool(
     }
   }
 );
-
-export function setSessionID(sessionID: string) {
-  currentSessionID = sessionID;
-}

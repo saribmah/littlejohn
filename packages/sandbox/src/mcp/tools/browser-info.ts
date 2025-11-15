@@ -7,9 +7,6 @@ import { tool } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 import { BrowserTabs } from '../../browser/tabs';
 
-// Use a module-level session ID (will be set per request context)
-let currentSessionID = 'default';
-
 export const browserInfoTool = tool(
   'browser-info',
   'Get information about a page in the browser. ' +
@@ -25,8 +22,8 @@ export const browserInfoTool = tool(
     try {
       // Get the tab to get info from
       const tab = args.tabId
-        ? await BrowserTabs.getTab(currentSessionID, args.tabId)
-        : await BrowserTabs.getTab(currentSessionID); // Gets active tab or creates one
+        ? await BrowserTabs.getTab(args.tabId)
+        : await BrowserTabs.getTab(); // Gets active tab or creates one
 
       if (!tab) {
         throw new Error(
@@ -96,10 +93,3 @@ export const browserInfoTool = tool(
     }
   }
 );
-
-/**
- * Set the current session ID for the tool
- */
-export function setSessionID(sessionID: string) {
-  currentSessionID = sessionID;
-}

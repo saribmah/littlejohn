@@ -6,7 +6,6 @@
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import { BrowserTabs } from '../../browser/tabs';
 
-let currentSessionID = 'default';
 
 export const browserListTabsTool = tool(
   'browser-list-tabs',
@@ -16,8 +15,8 @@ export const browserListTabsTool = tool(
   {},
   async (_args) => {
     try {
-      const tabs = await BrowserTabs.listTabs(currentSessionID);
-      const activeTabId = await BrowserTabs.getActiveTabId(currentSessionID);
+      const tabs = await BrowserTabs.listTabs();
+      const activeTabId = await BrowserTabs.getActiveTabId();
 
       if (tabs.length === 0) {
         return {
@@ -71,6 +70,3 @@ export const browserListTabsTool = tool(
   }
 );
 
-export function setSessionID(sessionID: string) {
-  currentSessionID = sessionID;
-}
