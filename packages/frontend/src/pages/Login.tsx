@@ -5,9 +5,9 @@ export function Login() {
   return (
     <>
       <LoginForm />
-      <p className="text-center mt-4 text-sm text-gray-600">
+      <p className="text-center mt-4 text-sm text-muted-foreground">
         Don't have an account?{' '}
-        <Link to="/signup" className="text-blue-600 hover:underline">
+        <Link to="/signup" className="text-primary hover:underline">
           Sign Up
         </Link>
       </p>

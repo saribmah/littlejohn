@@ -18,10 +18,10 @@ export function SignUpForm() {
   };
 
   return (
-    <Card className="w-full max-w-md p-6">
-      <h2 className="text-2xl font-bold mb-6">Create Account</h2>
+    <Card className="w-full max-w-md p-6 bg-card border-border">
+      <h2 className="text-2xl font-bold mb-6 text-foreground">Create Account</h2>
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/50 rounded-md text-destructive text-sm">
           {error}
         </div>
       )}
