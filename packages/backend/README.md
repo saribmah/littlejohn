@@ -66,10 +66,12 @@ The server will start on `http://localhost:3000` (or the port specified in `.env
 - `GET /api/portfolio/performance` - Get performance metrics
 
 ### Agent (`/api/agent`)
-- `POST /api/agent/start` - Start agent with config
-- `POST /api/agent/stop` - Stop agent
-- `GET /api/agent/status` - Get agent status
-- `PUT /api/agent/preferences` - Update preferences
+- `POST /api/agent/query` - Send query to user's sandbox agent
+- `GET /api/agent/stream` - SSE stream for agent responses
+- `POST /api/agent/start` - Start user's sandbox instance
+- `POST /api/agent/stop` - Stop user's sandbox instance
+- `GET /api/agent/status` - Get sandbox and agent status
+- `PUT /api/agent/preferences` - Update agent preferences
 
 ### Brokers (`/api/brokers`)
 - `GET /api/brokers` - List supported brokers
@@ -141,12 +143,24 @@ The `/api/auth` endpoints are powered by Better Auth with email/password support
 
 See `src/features/auth/README.md` for detailed authentication documentation.
 
+## Sandbox Integration
+
+The backend manages per-user sandbox instances:
+
+- **Lifecycle Management**: Boots up sandbox when user accesses dashboard, shuts down on logout/timeout
+- **Communication**: Routes user queries to appropriate sandbox via SSE
+- **Session Management**: Tracks active sandbox instances per user
+- **Resource Management**: Monitors and limits sandbox resource usage
+
 ## Next Steps
 
 - [x] Set up authentication with Better Auth
 - [x] Configure Prisma database
+- [x] Set up basic sandbox structure
+- [ ] Implement sandbox lifecycle management
+- [ ] Add sandbox-to-backend communication layer
 - [ ] Implement broker adapter interfaces
 - [ ] Add authentication middleware for protected routes
 - [ ] Implement portfolio routes
-- [ ] Add agent routes
+- [ ] Add agent routes with sandbox integration
 - [ ] Integrate market data services

@@ -32,18 +32,48 @@ The agent proposes trades with full context and rationale:
 ## Tech Stack
 
 - **Runtime**: Bun
-- **Frontend**: React + TypeScript
-- **Backend**: Node.js/Bun + TypeScript
-- **Sandbox**: Isolated execution environment for agent operations
+- **Frontend**: React 19 + TypeScript + Tailwind CSS
+- **Backend**: Hono + Bun + TypeScript + Prisma
+- **Sandbox**: Isolated per-user agent execution environment with browser automation
+- **Database**: PostgreSQL with Prisma ORM
+
+## Architecture Overview
+
+Little John uses a three-tier architecture:
+
+1. **Frontend**: User-facing dashboard for portfolio management and agent interaction
+2. **Backend**: API server handling authentication, data persistence, and broker integrations
+3. **Sandbox**: Per-user isolated environments where AI agents run with browser access
+
+### Sandbox Architecture
+
+Each user gets their own sandbox instance when accessing the dashboard:
+- **Isolated Environment**: Sandboxed execution environment for each user's agent
+- **Browser Automation**: Agent has access to a headless browser instance
+- **Robinhood Integration**: Agent logs into user's Robinhood account via browser
+- **Portfolio Access**: Reads real-time portfolio data and positions
+- **Trade Execution**: Executes trades on behalf of the user via browser automation
+- **User Communication**: Users interact with their agent through natural language queries
+
+The agent can answer questions like:
+- "What's my current portfolio value?"
+- "Show me my positions in tech stocks"
+- "Buy 10 shares of AAPL"
+- "What's the performance of my portfolio this month?"
 
 ## Project Structure
 
 ```
 littlejohn/
 ├── packages/
-│   ├── backend/      # API server and broker integrations
+│   ├── backend/      # API server, auth, and broker integrations
 │   ├── frontend/     # React UI for portfolio management
-│   └── sandbox/      # Isolated agent execution environment
+│   └── sandbox/      # Per-user agent runtime with browser automation
+│       ├── src/
+│       │   ├── browser/  # Browser automation (Playwright/Puppeteer)
+│       │   ├── mcp/      # Model Context Protocol server
+│       │   ├── routes/   # SSE endpoints for agent communication
+│       │   └── app.ts    # Sandbox server
 └── agent.md          # Agent architecture and implementation details
 ```
 

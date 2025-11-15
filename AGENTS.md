@@ -3,6 +3,7 @@
 ## Build/Lint/Test Commands
 - **Backend**: `cd packages/backend && bun run check` (type-check + lint), `bun run lint:fix`, `bun run dev`
 - **Frontend**: `cd packages/frontend && bun run check`, `bun run build`, `bun run dev` (uses Vite)
+- **Sandbox**: `cd packages/sandbox && bun run dev` (starts sandbox server with hot reload)
 - **Test**: `bun test` for all tests, `bun test <file-path>` for single test file
 - **Database**: `cd packages/backend && bun run db:migrate` (dev), `bun run db:push` (schema push), `bun run db:studio`
 
@@ -21,8 +22,14 @@
 - **Linting**: Oxlint configured for TypeScript, React, unicorn, and import rules
 
 ## Architecture
-- **Monorepo**: Workspaces in `packages/` - backend (Hono API), frontend (React), sandbox (experiments)
+- **Monorepo**: Workspaces in `packages/` - backend (Hono API), frontend (React), sandbox (per-user agent runtime)
 - **Features**: Organize by feature in `src/features/<feature-name>/{index.ts,routes.ts,types.ts}`
 - **Database**: Prisma with PostgreSQL. Run migrations before schema changes.
 - **Auth**: Better Auth integration - routes auto-mounted at `/api/auth/*`
 - **Environment**: Config in `src/config/env.ts`, type-safe env access via exported const object
+- **Sandbox**: Per-user isolated environments that boot up when user accesses dashboard. Each sandbox:
+  - Runs an AI agent with browser automation capabilities
+  - Provides MCP (Model Context Protocol) server for tool access
+  - Communicates with frontend via SSE (Server-Sent Events)
+  - Has browser access to log into Robinhood and execute trades
+  - Manages user's portfolio queries and trade execution

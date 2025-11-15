@@ -1,164 +1,328 @@
-/**
- * Browser Tabs Management
- * Manages browser tabs/pages per session
- */
+import CDP from "chrome-remote-interface"
+import { Instance } from "../project"
+import { Log } from "../utils"
+import { BrowserConnection } from "./connection"
 
-import { browserManager } from './index';
-import { BrowserConnection } from './connection';
-import type { Page } from 'playwright';
+export namespace BrowserTabs {
+  const log = Log.create({ service: "browser.tabs" })
 
-export interface Tab {
-  id: string;
-  url: string;
-  title: string;
-  cdp: BrowserConnection['cdp'];
-  page: Page;
-  isActive: boolean;
-}
-
-class TabsManager {
-  private sessions: Map<string, Map<string, Tab>> = new Map();
-  private activeTabs: Map<string, string> = new Map(); // sessionID -> activeTabID
-
-  /**
-   * Get or create a tab
-   */
-  async getTab(sessionID: string, tabId?: string): Promise<Tab | null> {
-    let sessionTabs = this.sessions.get(sessionID);
-    
-    if (!sessionTabs) {
-      sessionTabs = new Map();
-      this.sessions.set(sessionID, sessionTabs);
-    }
-
-    // If no tabId provided, get active tab or create default tab
-    if (!tabId) {
-      const activeTabId = this.activeTabs.get(sessionID);
-      if (activeTabId) {
-        return sessionTabs.get(activeTabId) || null;
-      }
-      
-      // Create default tab if none exists
-      return await this.createTab(sessionID);
-    }
-
-    return sessionTabs.get(tabId) || null;
+  export interface Tab {
+    id: string          // CDP target ID
+    cdp: CDP.Client     // CDP connection to this specific tab
+    url: string         // Current URL
+    title: string       // Page title
+    createdAt: number   // Timestamp
   }
 
-  /**
-   * Create a new tab
-   */
-  async createTab(sessionID: string, url?: string): Promise<Tab> {
-    const page = await browserManager.newPage();
-    
-    if (url) {
-      await page.goto(url);
+  export interface BrowserInstance {
+    host: string
+    port: number
+    tabs: Map<string, Tab>  // tabId -> Tab
+  }
+
+  export const state = Instance.state(
+    () => {
+      const browsers = new Map<string, BrowserInstance>()  // `${host}:${port}` -> BrowserInstance
+      const sessionActiveTab = new Map<string, string>()  // sessionID -> activeTabId
+      return { browsers, sessionActiveTab }
+    },
+    async (state) => {
+      // Cleanup: close all tab connections
+      for (const [browserKey, browser] of state.browsers) {
+        for (const [tabId, tab] of browser.tabs) {
+          try {
+            await tab.cdp.close()
+            log.info("tab connection closed", { browserKey, tabId })
+          } catch (error) {
+            log.error("failed to close tab connection", { browserKey, tabId, error })
+          }
+        }
+        browser.tabs.clear()
+      }
+      state.browsers.clear()
+      state.sessionActiveTab.clear()
+    }
+  )
+
+  function getBrowserKey(host: string, port: number): string {
+    return `${host}:${port}`
+  }
+
+  export async function initialize(sessionID: string): Promise<void> {
+    // Get the browser connection for this session
+    const connection = await BrowserConnection.get(sessionID)
+    if (!connection) {
+      throw new Error("No browser connection found for session. Connect to browser first.")
     }
 
-    const tabId = `tab_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    const connection = new BrowserConnection(page);
+    const { host, port } = connection
+    const browserKey = getBrowserKey(host, port)
+
+    // Check if this browser is already initialized
+    let browser = state().browsers.get(browserKey)
+    if (!browser) {
+      // Create new browser instance
+      browser = {
+        host,
+        port,
+        tabs: new Map(),
+      }
+      state().browsers.set(browserKey, browser)
+    }
+
+    // Add the initial tab if it's not already there
+    if (connection.target && !browser.tabs.has(connection.target)) {
+      const result = await connection.cdp.Runtime.evaluate({
+        expression: `JSON.stringify({ url: window.location.href, title: document.title })`,
+        returnByValue: true,
+      })
+      const pageInfo = JSON.parse(result.result.value as string)
+
+      const tab: Tab = {
+        id: connection.target,
+        cdp: connection.cdp,
+        url: pageInfo.url,
+        title: pageInfo.title,
+        createdAt: Date.now(),
+      }
+
+      browser.tabs.set(connection.target, tab)
+    }
+
+    // Set this tab as active for this session if no active tab is set
+    if (!state().sessionActiveTab.has(sessionID) && connection.target) {
+      state().sessionActiveTab.set(sessionID, connection.target)
+    }
+
+    log.info("tabs initialized", { sessionID, browserKey, initialTabId: connection.target })
+  }
+
+  export async function getTab(sessionID: string, tabId?: string): Promise<Tab | undefined> {
+    const connection = await BrowserConnection.get(sessionID)
+    if (!connection) return undefined
+
+    const browserKey = getBrowserKey(connection.host, connection.port)
+    const browser = state().browsers.get(browserKey)
+
+    if (!browser) {
+      // Try to initialize if not yet initialized
+      await initialize(sessionID)
+      return getTab(sessionID, tabId)
+    }
+
+    // If tabId specified, return that tab
+    if (tabId) {
+      return browser.tabs.get(tabId)
+    }
+
+    // Otherwise return active tab for this session
+    const activeTabId = state().sessionActiveTab.get(sessionID)
+    if (!activeTabId) return undefined
+    return browser.tabs.get(activeTabId)
+  }
+
+  export async function listTabs(sessionID: string): Promise<Tab[]> {
+    const connection = await BrowserConnection.get(sessionID)
+    if (!connection) return []
+
+    const browserKey = getBrowserKey(connection.host, connection.port)
+    const browser = state().browsers.get(browserKey)
+
+    if (!browser) {
+      await initialize(sessionID)
+      return listTabs(sessionID)
+    }
+
+    return Array.from(browser.tabs.values())
+  }
+
+  export async function getActiveTabId(sessionID: string): Promise<string | null> {
+    return state().sessionActiveTab.get(sessionID) || null
+  }
+
+  export async function createTab(input: {
+    sessionID: string
+    url?: string
+  }): Promise<Tab> {
+    // Get the browser connection to get host/port
+    const connection = await BrowserConnection.get(input.sessionID)
+    if (!connection) {
+      throw new Error("No browser connection found for session")
+    }
+
+    const { host, port } = connection
+    const browserKey = getBrowserKey(host, port)
+
+    // Ensure browser is initialized
+    let browser = state().browsers.get(browserKey)
+    if (!browser) {
+      await initialize(input.sessionID)
+      browser = state().browsers.get(browserKey)
+    }
+
+    if (!browser) {
+      throw new Error("Failed to initialize browser tabs")
+    }
+
+    // Create a new target (tab) via CDP HTTP API using PUT method
+    const newTabUrl = input.url || "about:blank"
+    const createUrl = `http://${host}:${port}/json/new?${encodeURIComponent(newTabUrl)}`
+
+    log.info("creating new tab", { browserKey, createUrl, sessionID: input.sessionID })
+
+    const createResponse = await fetch(createUrl, {
+      method: "PUT",  // Chrome CDP expects PUT for /json/new
+    })
+
+    if (!createResponse.ok) {
+      const errorText = await createResponse.text()
+      log.error("failed to create tab via CDP", {
+        status: createResponse.status,
+        statusText: createResponse.statusText,
+        errorText,
+        browserKey
+      })
+      throw new Error(`Failed to create tab: ${createResponse.status} ${createResponse.statusText}`)
+    }
+
+    const responseText = await createResponse.text()
+    log.info("received CDP response", { responseText, browserKey })
+
+    let newTarget: { id: string; url: string; title: string }
+
+    try {
+      newTarget = JSON.parse(responseText)
+      log.info("parsed new target", { newTarget, browserKey })
+    } catch (error) {
+      log.error("failed to parse CDP response", { responseText, error, browserKey })
+      throw new Error(`Failed to parse CDP response when creating tab: ${responseText}`)
+    }
+
+    // Connect to the new target
+    const cdp = await CDP({ host, port, target: newTarget.id })
+    await cdp.Page.enable()
+    await cdp.Runtime.enable()
+    await cdp.Network.enable()
+
+    // Wait for page to load if URL was provided
+    if (input.url) {
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => resolve(), 5000)
+        cdp.Page.loadEventFired(() => {
+          clearTimeout(timeout)
+          resolve()
+        })
+      })
+    }
+
+    // Get page info
+    const result = await cdp.Runtime.evaluate({
+      expression: `JSON.stringify({ url: window.location.href, title: document.title })`,
+      returnByValue: true,
+    })
+    const pageInfo = JSON.parse(result.result.value as string)
 
     const tab: Tab = {
-      id: tabId,
-      url: url || 'about:blank',
-      title: (await page.title()) || '',
-      cdp: connection.cdp,
-      page,
-      isActive: false
-    };
-
-    let sessionTabs = this.sessions.get(sessionID);
-    if (!sessionTabs) {
-      sessionTabs = new Map();
-      this.sessions.set(sessionID, sessionTabs);
+      id: newTarget.id,
+      cdp,
+      url: pageInfo.url,
+      title: pageInfo.title,
+      createdAt: Date.now(),
     }
 
-    sessionTabs.set(tabId, tab);
+    browser.tabs.set(newTarget.id, tab)
+    log.info("tab created", { sessionID: input.sessionID, browserKey, tabId: newTarget.id, url: input.url })
 
-    // Set as active if it's the first tab
-    if (sessionTabs.size === 1) {
-      this.setActiveTab(sessionID, tabId);
-    }
-
-    return tab;
+    return tab
   }
 
-  /**
-   * List all tabs for a session
-   */
-  listTabs(sessionID: string): Tab[] {
-    const sessionTabs = this.sessions.get(sessionID);
-    if (!sessionTabs) {
-      return [];
+  export async function switchTab(sessionID: string, tabId: string): Promise<void> {
+    const connection = await BrowserConnection.get(sessionID)
+    if (!connection) {
+      throw new Error("No browser connection found for session")
     }
-    return Array.from(sessionTabs.values());
+
+    const browserKey = getBrowserKey(connection.host, connection.port)
+    const browser = state().browsers.get(browserKey)
+
+    if (!browser) {
+      throw new Error("Browser not initialized")
+    }
+
+    if (!browser.tabs.has(tabId)) {
+      throw new Error(`Tab ${tabId} not found in browser ${browserKey}`)
+    }
+
+    state().sessionActiveTab.set(sessionID, tabId)
+    log.info("switched tab", { sessionID, tabId, browserKey })
   }
 
-  /**
-   * Set active tab
-   */
-  setActiveTab(sessionID: string, tabId: string): void {
-    const sessionTabs = this.sessions.get(sessionID);
-    if (!sessionTabs) {
-      return;
+  export async function closeTab(sessionID: string, tabId: string): Promise<void> {
+    const connection = await BrowserConnection.get(sessionID)
+    if (!connection) {
+      throw new Error("No browser connection found for session")
     }
 
-    // Deactivate all tabs
-    for (const tab of sessionTabs.values()) {
-      tab.isActive = false;
+    const browserKey = getBrowserKey(connection.host, connection.port)
+    const browser = state().browsers.get(browserKey)
+
+    if (!browser) {
+      throw new Error("Browser not initialized")
     }
 
-    // Activate selected tab
-    const tab = sessionTabs.get(tabId);
-    if (tab) {
-      tab.isActive = true;
-      this.activeTabs.set(sessionID, tabId);
-    }
-  }
-
-  /**
-   * Close a tab
-   */
-  async closeTab(sessionID: string, tabId: string): Promise<void> {
-    const sessionTabs = this.sessions.get(sessionID);
-    if (!sessionTabs) {
-      return;
-    }
-
-    const tab = sessionTabs.get(tabId);
+    const tab = browser.tabs.get(tabId)
     if (!tab) {
-      return;
+      throw new Error(`Tab ${tabId} not found`)
     }
 
-    await tab.page.close();
-    sessionTabs.delete(tabId);
+    // Don't allow closing the last tab
+    if (browser.tabs.size === 1) {
+      throw new Error("Cannot close the last tab. At least one tab must remain open.")
+    }
 
-    // If this was the active tab, set another tab as active
-    if (this.activeTabs.get(sessionID) === tabId) {
-      this.activeTabs.delete(sessionID);
-      const remainingTabs = Array.from(sessionTabs.values());
-      if (remainingTabs.length > 0 && remainingTabs[0]) {
-        this.setActiveTab(sessionID, remainingTabs[0].id);
+    // Close CDP connection
+    await tab.cdp.close()
+
+    // Close the target via CDP HTTP API
+    await fetch(`http://${connection.host}:${connection.port}/json/close/${tabId}`)
+
+    // Remove from tabs
+    browser.tabs.delete(tabId)
+
+    // If this was the active tab for this session, switch to another tab
+    if (state().sessionActiveTab.get(sessionID) === tabId) {
+      const remainingTabs = Array.from(browser.tabs.keys())
+      const firstTab = remainingTabs[0]
+      if (firstTab) {
+        state().sessionActiveTab.set(sessionID, firstTab)
+      } else {
+        state().sessionActiveTab.delete(sessionID)
       }
     }
+
+    log.info("tab closed", { sessionID, tabId, browserKey })
   }
 
-  /**
-   * Close all tabs for a session
-   */
-  async closeSession(sessionID: string): Promise<void> {
-    const sessionTabs = this.sessions.get(sessionID);
-    if (!sessionTabs) {
-      return;
+  export async function closeAll(sessionID: string): Promise<void> {
+    const connection = await BrowserConnection.get(sessionID)
+    if (!connection) return
+
+    const browserKey = getBrowserKey(connection.host, connection.port)
+    const browser = state().browsers.get(browserKey)
+    if (!browser) return
+
+    // Close all tab CDP connections
+    for (const [tabId, tab] of browser.tabs) {
+      try {
+        await tab.cdp.close()
+        log.info("tab connection closed", { browserKey, tabId })
+      } catch (error) {
+        log.error("failed to close tab", { browserKey, tabId, error })
+      }
     }
 
-    for (const tab of sessionTabs.values()) {
-      await tab.page.close();
-    }
-
-    this.sessions.delete(sessionID);
-    this.activeTabs.delete(sessionID);
+    state().browsers.delete(browserKey)
+    state().sessionActiveTab.delete(sessionID)
+    log.info("closed all tabs for browser", { sessionID, browserKey })
   }
 }
-
-export const BrowserTabs = new TabsManager();

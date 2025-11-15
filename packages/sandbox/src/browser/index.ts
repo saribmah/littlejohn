@@ -112,3 +112,7 @@ process.on('SIGTERM', async () => {
   await browserManager.close();
   process.exit(0);
 });
+
+// Export launcher for CDP-based browser management
+export { BrowserLauncher } from './launcher';
+export { BrowserStealth } from './stealth';

@@ -9,6 +9,7 @@ export function handleHealth(c: Context) {
     status: 'ok',
     message: 'Claude Agent API Server is running',
     endpoints: {
+      init: 'POST /init - Initialize user sandbox',
       message: 'POST /message - Send a message and receive SSE stream response'
     }
   });

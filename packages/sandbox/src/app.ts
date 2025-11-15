@@ -5,7 +5,7 @@
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { handleHealth, handleMessage } from './routes';
+import { handleHealth, handleMessage, handleInit } from './routes';
 
 export function createApp() {
   const app = new Hono();
@@ -15,6 +15,7 @@ export function createApp() {
 
   // Routes
   app.get('/', handleHealth);
+  app.post('/init', handleInit);
   app.post('/message', handleMessage);
 
   return app;
