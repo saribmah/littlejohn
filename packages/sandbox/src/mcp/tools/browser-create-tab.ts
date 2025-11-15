@@ -23,7 +23,6 @@ export const browserCreateTabTool = tool(
   async (args) => {
     try {
       const tab = await BrowserTabs.createTab({
-        sessionID: currentSessionID,
         url: args.url,
       });
 

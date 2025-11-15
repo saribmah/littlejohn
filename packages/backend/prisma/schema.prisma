@@ -22,6 +22,7 @@ model User {
   accounts          Account[]
   sessions          Session[]
   onboardingProfile OnboardingProfile?
+  portfolio         Portfolio?
 
   @@map("user")
 }
@@ -93,4 +94,63 @@ model OnboardingProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("onboarding_profile")
+}
+
+model Portfolio {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+
+  // Current portfolio value
+  currentValue Float @default(0)
+
+  // Performance changes
+  dayChangeValue       Float @default(0)
+  dayChangePercentage  Float @default(0)
+
+  weekChangeValue      Float @default(0)
+  weekChangePercentage Float @default(0)
+
+  monthChangeValue      Float @default(0)
+  monthChangePercentage Float @default(0)
+
+  threeMonthChangeValue      Float @default(0)
+  threeMonthChangePercentage Float @default(0)
+
+  yearChangeValue      Float @default(0)
+  yearChangePercentage Float @default(0)
+
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positions Position[]
+
+  @@map("portfolio")
+}
+
+model Position {
+  id           String   @id @default(cuid())
+  portfolioId  String
+
+  // Position details
+  symbol       String
+  quantity     Float
+  averagePrice Float
+  currentPrice Float
+  marketValue  Float
+
+  // Performance
+  totalReturn       Float
+  totalReturnPercent Float
+  dayReturn         Float
+  dayReturnPercent  Float
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, symbol])
+  @@map("position")
 }

@@ -8,6 +8,7 @@
     "test:init": "bun run test-init.ts",
     "client": "bun run examples/client-example.ts",
     "test:browser-tool": "bun run examples/test-browser-tool.ts",
+    "test:backend-client": "bun run examples/backend-client-example.ts",
     "postinstall": "playwright install chromium"
   },
   "devDependencies": {

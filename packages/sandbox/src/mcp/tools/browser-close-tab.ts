@@ -32,7 +32,7 @@ export const browserCloseTabTool = tool(
       };
 
       // Close the tab
-      await BrowserTabs.closeTab(currentSessionID, args.tabId);
+      await BrowserTabs.closeTab(args.tabId);
 
       // Get the new active tab
       const activeTabId = await BrowserTabs.getActiveTabId();
