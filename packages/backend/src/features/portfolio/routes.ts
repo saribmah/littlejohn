@@ -6,8 +6,23 @@ import type { PortfolioPerformanceResponse, PositionsResponse } from './types';
 
 const portfolio = new Hono();
 
-// Helper function to get user from session
+// Helper function to get user from session or X-User-Id header
 async function getUserFromSession(c: any) {
+  // Check for X-User-Id header first (for sandbox requests)
+  const userId = c.req.header('X-User-Id');
+
+  if (userId) {
+    // Verify the user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (user) {
+      return user;
+    }
+  }
+
+  // Fall back to session-based auth
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
   });

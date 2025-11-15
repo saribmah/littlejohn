@@ -6,7 +6,7 @@
  *   2. In another terminal: bun run test-init.ts
  */
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://localhost:3001'; // Sandbox runs on 3001, backend on 3000
 
 interface InitResponse {
   status: string;
@@ -29,6 +29,8 @@ interface InitResponse {
         title: string;
       }>;
     };
+    portfolio?: any;
+    positions?: any[];
   };
   timestamp: string;
   error?: string;
@@ -39,7 +41,9 @@ async function testInit() {
   console.log('🧪 Testing /init endpoint...\n');
 
   const sessionID = `test-session-${Date.now()}`;
-  const userId = 'test-user-123';
+  // NOTE: Replace with a real user ID from your database
+  // You can get this by running: cd packages/backend && bun run get-user-id.ts
+  const userId = '1qAMfQi7bvqBRIHGi9Da1HVzXdZXW4aU'; // sarib@gmail.com
 
   const requestBody = {
     sessionID,
@@ -95,6 +99,32 @@ async function testInit() {
           console.log(`     URL: ${tab.url}`);
           console.log(`     ID: ${tab.id}`);
         });
+      }
+
+      // Display portfolio data
+      if (data.session.portfolio) {
+        console.log('\n💰 Portfolio Performance:');
+        console.log(`  Current Value: $${data.session.portfolio.currentValue.toFixed(2)}`);
+        console.log(`  Day Change: $${data.session.portfolio.dayChange.value.toFixed(2)} (${data.session.portfolio.dayChange.percentage.toFixed(2)}%)`);
+        console.log(`  Week Change: $${data.session.portfolio.weekChange.value.toFixed(2)} (${data.session.portfolio.weekChange.percentage.toFixed(2)}%)`);
+        console.log(`  Month Change: $${data.session.portfolio.monthChange.value.toFixed(2)} (${data.session.portfolio.monthChange.percentage.toFixed(2)}%)`);
+        console.log(`  Year Change: $${data.session.portfolio.yearChange.value.toFixed(2)} (${data.session.portfolio.yearChange.percentage.toFixed(2)}%)`);
+      } else {
+        console.log('\n💰 Portfolio: No data available');
+      }
+
+      // Display positions
+      if (data.session.positions && data.session.positions.length > 0) {
+        console.log('\n📊 Positions:');
+        data.session.positions.forEach((pos, idx) => {
+          console.log(`  ${idx + 1}. ${pos.symbol}`);
+          console.log(`     Quantity: ${pos.quantity}`);
+          console.log(`     Current Price: $${pos.currentPrice.toFixed(2)}`);
+          console.log(`     Market Value: $${pos.marketValue.toFixed(2)}`);
+          console.log(`     Total Return: $${pos.totalReturn.toFixed(2)} (${pos.totalReturnPercent.toFixed(2)}%)`);
+        });
+      } else {
+        console.log('\n📊 Positions: No positions available');
       }
     }
 

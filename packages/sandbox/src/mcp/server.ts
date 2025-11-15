@@ -1,6 +1,6 @@
 /**
- * MCP Server Configuration
- * Exports custom MCP tools and server instance
+ * Browser MCP Server Configuration
+ * Manages browser automation tools
  */
 
 import { createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
@@ -16,10 +16,10 @@ import { browserCloseTabTool } from './tools/browser-close-tab';
 import { browserSwitchTabTool } from './tools/browser-switch-tab';
 
 /**
- * MCP server with all custom tools
+ * MCP server for browser automation tools
  */
-export const customMcpServer = createSdkMcpServer({
-  name: 'custom-browser-tools',
+export const browserMcpServer = createSdkMcpServer({
+  name: 'browser-tools',
   version: '1.0.0',
   tools: [
     browserInfoTool,

@@ -6,7 +6,7 @@
 import type { Context } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { query } from '@anthropic-ai/claude-agent-sdk';
-import { customMcpServer } from '../mcp';
+import { browserMcpServer, portfolioMcpServer } from '../mcp';
 import { sendSSEMessage, sendCompletionEvent, sendErrorEvent } from '../utils/sse';
 import type { MessageRequest } from '../types';
 
@@ -34,7 +34,8 @@ export async function handleMessage(c: Context) {
             permissionMode: 'bypassPermissions',
             includePartialMessages: options.includePartialMessages || false,
             mcpServers: {
-              'custom-browser-tools': customMcpServer
+              'browser-tools': browserMcpServer,
+              'portfolio-tools': portfolioMcpServer,
             },
             ...options
           }

@@ -7,6 +7,7 @@ import type { Context } from 'hono';
 import { BrowserLauncher, BrowserTabs } from '../browser';
 import { Log } from '../utils';
 import type { InitRequest } from '../types';
+import { backendClient } from '../clients';
 
 const log = Log.create({ service: 'routes.init' });
 
@@ -45,12 +46,42 @@ export async function handleInit(c: Context) {
     const tabs = await BrowserTabs.listTabs();
     const activeTabId = await BrowserTabs.getActiveTabId();
     
-    log.info('tab management initialized', { 
+    log.info('tab management initialized', {
       tabCount: tabs.length,
-      activeTabId 
+      activeTabId
     });
-    
-    // 3. Return session details
+
+    // 3. Fetch portfolio and positions from backend
+    let portfolio = null;
+    let positions = null;
+
+    if (userId) {
+      try {
+        log.info('fetching portfolio data from backend', { userId });
+
+        // Fetch portfolio performance
+        const portfolioData = await backendClient.getPortfolioPerformance(userId);
+        portfolio = portfolioData.performance;
+
+        log.info('portfolio data fetched', {
+          currentValue: portfolio.currentValue
+        });
+
+        // Fetch positions
+        const positionsData = await backendClient.getPositions(userId);
+        positions = positionsData.positions;
+
+        log.info('positions fetched', {
+          count: positions.length
+        });
+
+      } catch (error) {
+        log.error('failed to fetch portfolio data', { error });
+        // Continue without portfolio data - not critical for init
+      }
+    }
+
+    // 4. Return session details
     return c.json({
       status: 'success',
       message: 'Sandbox initialized successfully',
@@ -72,6 +103,8 @@ export async function handleInit(c: Context) {
             title: tab.title,
           })),
         },
+        portfolio,
+        positions,
       },
       timestamp: new Date().toISOString(),
     });

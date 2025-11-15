@@ -1,9 +1,11 @@
 /**
- * MCP Server Configuration
- * Exports all custom MCP tools and server instance
+ * MCP Servers Configuration
+ * Exports all MCP servers and tools
  */
 
-export { customMcpServer } from './server';
+// Export MCP servers
+export { browserMcpServer } from './server';
+export { portfolioMcpServer } from './portfolio-tools';
 
 // Export all browser tools
 export { browserInfoTool } from './tools/browser-info';
@@ -16,3 +18,7 @@ export { browserListTabsTool } from './tools/browser-list-tabs';
 export { browserCreateTabTool } from './tools/browser-create-tab';
 export { browserCloseTabTool } from './tools/browser-close-tab';
 export { browserSwitchTabTool } from './tools/browser-switch-tab';
+
+// Export portfolio tools
+export { updateUserPortfolioTool } from './portfolio-tools/update-user-portfolio';
+export { updateUserPositionsTool } from './portfolio-tools/update-user-positions';
