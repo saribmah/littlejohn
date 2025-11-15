@@ -55,9 +55,22 @@ function MyComponent() {
 
 Uses Better Auth for authentication. Routes are auto-mounted at `/api/auth/*` by the backend.
 
+## API Integration
+
+The auth feature integrates with Better Auth running on the backend at `/api/auth/*`.
+
+**Service Functions** (`service.ts`):
+- `signUp({ email, password, name })` - Register new user
+- `signIn({ email, password })` - Authenticate user
+- `signOut()` - End user session
+- `getCurrentSession()` - Get current user session
+
+**Configuration:**
+Set `VITE_API_URL` in `.env` to point to your backend API (default: `http://localhost:3000`)
+
 ## TODO
 
-- [ ] Replace mock login/signup with actual Better Auth API calls
 - [ ] Add token refresh logic
 - [ ] Add email verification flow
 - [ ] Add password reset functionality
+- [ ] Add OAuth providers (Google, GitHub, etc.)

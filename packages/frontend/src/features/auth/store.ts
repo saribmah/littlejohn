@@ -37,28 +37,15 @@ export const useAuthStore = create<AuthStore>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          // TODO: Implement Better Auth login API call
-          // const response = await fetch('/api/auth/sign-in', {
-          //   method: 'POST',
-          //   headers: { 'Content-Type': 'application/json' },
-          //   body: JSON.stringify({ email, password }),
-          // });
-          // const data = await response.json();
-          
-          // Temporary mock implementation
-          console.log('Login:', { email, password });
-          
-          // Simulate API call
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          
-          const mockUser: User = {
-            id: '1',
-            email,
-            name: email.split('@')[0],
-          };
+          const { signIn } = await import('./service');
+          const result = await signIn({ email, password });
           
           set({
-            user: mockUser,
+            user: {
+              id: result.user.id,
+              email: result.user.email,
+              name: result.user.name,
+            },
             isAuthenticated: true,
             isLoading: false,
             error: null,
@@ -74,28 +61,19 @@ export const useAuthStore = create<AuthStore>()(
       signup: async (email: string, password: string, name?: string) => {
         set({ isLoading: true, error: null });
         try {
-          // TODO: Implement Better Auth signup API call
-          // const response = await fetch('/api/auth/sign-up', {
-          //   method: 'POST',
-          //   headers: { 'Content-Type': 'application/json' },
-          //   body: JSON.stringify({ email, password, name }),
-          // });
-          // const data = await response.json();
-          
-          // Temporary mock implementation
-          console.log('Signup:', { email, password, name });
-          
-          // Simulate API call
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          
-          const mockUser: User = {
-            id: '1',
-            email,
-            name: name || email.split('@')[0],
-          };
+          const { signUp } = await import('./service');
+          const result = await signUp({ 
+            email, 
+            password, 
+            name: name || email.split('@')[0] 
+          });
           
           set({
-            user: mockUser,
+            user: {
+              id: result.user.id,
+              email: result.user.email,
+              name: result.user.name,
+            },
             isAuthenticated: true,
             isLoading: false,
             error: null,
@@ -108,12 +86,19 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      logout: () => {
-        set({
-          user: null,
-          isAuthenticated: false,
-          error: null,
-        });
+      logout: async () => {
+        try {
+          const { signOut } = await import('./service');
+          await signOut();
+        } catch (error) {
+          console.error('Logout error:', error);
+        } finally {
+          set({
+            user: null,
+            isAuthenticated: false,
+            error: null,
+          });
+        }
       },
 
       clearError: () => {

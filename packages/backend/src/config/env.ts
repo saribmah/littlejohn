@@ -41,7 +41,7 @@ export const env = {
 
   // Better Auth
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || '',
-  BETTER_AUTH_URL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
+  BETTER_AUTH_URL: process.env.BETTER_AUTH_URL || 'http://localhost:5173',
 
   // Agent
   DEFAULT_AGENT_MODE: process.env.DEFAULT_AGENT_MODE || 'co-pilot',
