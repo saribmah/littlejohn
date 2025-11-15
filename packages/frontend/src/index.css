@@ -1,12 +1,21 @@
 @import "../styles/globals.css";
 
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 @layer base {
   :root {
     @apply font-sans;
   }
 
   body {
-    @apply grid place-items-center min-w-[320px] min-h-screen relative m-0 bg-background text-foreground;
+    @apply min-w-[320px] min-h-screen relative m-0 bg-background text-foreground;
   }
 }
 
