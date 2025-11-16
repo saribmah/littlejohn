@@ -9,22 +9,48 @@ import { TradeAction, TradeStatus } from '@prisma/client';
 
 const app = new Hono();
 
+// Helper function to get user from session or X-User-Id header
+async function getUserFromSession(c: any) {
+  // Check for X-User-Id header first (for sandbox requests)
+  const userId = c.req.header('X-User-Id');
+
+  if (userId) {
+    // Verify the user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (user) {
+      return user;
+    }
+  }
+
+  // Fall back to session-based auth
+  const session = await auth.api.getSession({
+    headers: c.req.raw.headers,
+  });
+
+  if (!session?.user) {
+    return null;
+  }
+
+  return session.user;
+}
+
 /**
  * Get all trades for the authenticated user
  * GET /api/trades
  */
 app.get('/', async (c) => {
   try {
-    const session = await auth.api.getSession({
-      headers: c.req.raw.headers
-    });
+    const user = await getUserFromSession(c);
 
-    if (!session || !session.user) {
+    if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
     const trades = await prisma.trade.findMany({
-      where: { userId: session.user.id },
+      where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -53,11 +79,9 @@ app.get('/', async (c) => {
  */
 app.get('/:id', async (c) => {
   try {
-    const session = await auth.api.getSession({
-      headers: c.req.raw.headers
-    });
+    const user = await getUserFromSession(c);
 
-    if (!session || !session.user) {
+    if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
@@ -66,7 +90,7 @@ app.get('/:id', async (c) => {
     const trade = await prisma.trade.findFirst({
       where: {
         id: tradeId,
-        userId: session.user.id
+        userId: user.id
       },
       select: {
         id: true,
@@ -99,11 +123,9 @@ app.get('/:id', async (c) => {
  */
 app.post('/', async (c) => {
   try {
-    const session = await auth.api.getSession({
-      headers: c.req.raw.headers
-    });
+    const user = await getUserFromSession(c);
 
-    if (!session || !session.user) {
+    if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
@@ -131,7 +153,7 @@ app.post('/', async (c) => {
     // Create the trade
     const trade = await prisma.trade.create({
       data: {
-        userId: session.user.id,
+        userId: user.id,
         symbol: symbol.toUpperCase(), // Store symbols in uppercase
         amount,
         action: action as TradeAction,
@@ -167,11 +189,9 @@ app.post('/', async (c) => {
  */
 app.put('/:id', async (c) => {
   try {
-    const session = await auth.api.getSession({
-      headers: c.req.raw.headers
-    });
+    const user = await getUserFromSession(c);
 
-    if (!session || !session.user) {
+    if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
@@ -183,7 +203,7 @@ app.put('/:id', async (c) => {
     const existingTrade = await prisma.trade.findFirst({
       where: {
         id: tradeId,
-        userId: session.user.id
+        userId: user.id
       }
     });
 
@@ -244,11 +264,9 @@ app.put('/:id', async (c) => {
  */
 app.delete('/:id', async (c) => {
   try {
-    const session = await auth.api.getSession({
-      headers: c.req.raw.headers
-    });
+    const user = await getUserFromSession(c);
 
-    if (!session || !session.user) {
+    if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
@@ -258,7 +276,7 @@ app.delete('/:id', async (c) => {
     const existingTrade = await prisma.trade.findFirst({
       where: {
         id: tradeId,
-        userId: session.user.id
+        userId: user.id
       }
     });
 
@@ -284,11 +302,9 @@ app.delete('/:id', async (c) => {
  */
 app.get('/status/:status', async (c) => {
   try {
-    const session = await auth.api.getSession({
-      headers: c.req.raw.headers
-    });
+    const user = await getUserFromSession(c);
 
-    if (!session || !session.user) {
+    if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
@@ -300,7 +316,7 @@ app.get('/status/:status', async (c) => {
 
     const trades = await prisma.trade.findMany({
       where: {
-        userId: session.user.id,
+        userId: user.id,
         status: status as TradeStatus
       },
       orderBy: { createdAt: 'desc' },

@@ -151,8 +151,15 @@ Focus on actionable recommendations with clear reasoning.`;
         log.info('portfolio analysis completed', { messageCount });
 
         // Fetch updated trades to show suggested trades
-        const updatedTradesData = await backendClient.getTrades(userId);
-        const suggestedTrades = updatedTradesData.trades.filter((t: any) => t.status === 'PENDING');
+        let suggestedTrades: any[] = [];
+        try {
+          const updatedTradesData = await backendClient.getTrades(userId);
+          suggestedTrades = updatedTradesData.trades.filter((t: any) => t.status === 'PENDING');
+          log.info('fetched suggested trades', { count: suggestedTrades.length });
+        } catch (error) {
+          log.error('failed to fetch suggested trades', { error });
+          // Continue anyway - don't fail the whole analysis
+        }
 
         // Send completion with final data
         await stream.writeSSE({
@@ -172,6 +179,8 @@ Focus on actionable recommendations with clear reasoning.`;
           event: 'complete',
           id: String(messageCount)
         });
+
+        log.info('sent completion event');
 
       } catch (error) {
         console.error('\n=== Analysis Error ===');
