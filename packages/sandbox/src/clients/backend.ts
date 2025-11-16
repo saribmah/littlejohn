@@ -157,6 +157,55 @@ export class BackendClient {
       enabled: data.twoFactor.enabled
     };
   }
+
+  /**
+   * Create a new trade
+   */
+  async createTrade(userId: string, trade: {
+    symbol: string;
+    amount: number;
+    action: 'BUY' | 'SELL';
+    status?: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'FAILED';
+    price?: number;
+    total?: number;
+    note?: string;
+  }) {
+    const response = await fetch(`${this.baseUrl}/api/trades`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.apiKey && { 'X-API-Key': this.apiKey }),
+        'X-User-Id': userId,
+      },
+      body: JSON.stringify(trade),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create trade: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get all trades for a user
+   */
+  async getTrades(userId: string) {
+    const response = await fetch(`${this.baseUrl}/api/trades`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.apiKey && { 'X-API-Key': this.apiKey }),
+        'X-User-Id': userId,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch trades: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
 }
 
 // Export a default instance

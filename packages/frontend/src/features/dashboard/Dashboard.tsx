@@ -24,6 +24,76 @@ export function Dashboard() {
   const { trades, isLoading: isLoadingTrades, fetchTrades } = useTradeStore();
   const { user } = useAuthStore();
 
+  // Portfolio analysis function
+  const startAnalysis = async () => {
+    if (!user?.id) return;
+
+    try {
+      setInitProgress({
+        status: 'running',
+        message: 'Analyzing portfolio...',
+      });
+
+      await sandboxService.analyzeSandbox(
+        {
+          sessionID: `analysis-${Date.now()}`,
+          userId: user.id,
+        },
+        (event) => {
+          console.log('Analysis event:', event);
+
+          switch (event.type) {
+            case 'init':
+              setInitProgress({
+                status: 'running',
+                message: 'Starting portfolio analysis...',
+              });
+              break;
+
+            case 'message':
+              if (event.data.type === 'assistant') {
+                const text = event.data.content?.find((c: any) => c.type === 'text')?.text;
+                if (text) {
+                  setInitProgress({
+                    status: 'running',
+                    message: 'Analyzing portfolio...',
+                    details: text.substring(0, 100),
+                  });
+                }
+              }
+              break;
+
+            case 'complete':
+              setInitProgress({
+                status: 'completed',
+                message: 'Portfolio analysis completed!',
+                details: `${event.data.session?.suggestedTrades?.length || 0} trades suggested`,
+              });
+
+              // Refresh trades to show suggestions
+              fetchTrades();
+              break;
+
+            case 'error':
+              setInitProgress({
+                status: 'error',
+                message: 'Analysis failed',
+                details: event.data.error || 'Unknown error',
+              });
+              break;
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Portfolio analysis error:', error);
+      setInitProgress({
+        status: 'error',
+        message: 'Failed to analyze portfolio',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
   // Initialize sandbox when component mounts
   useEffect(() => {
     const initSandbox = async () => {
@@ -60,13 +130,28 @@ export function Dashboard() {
 
               case 'message':
                 if (event.data.type === 'assistant') {
-                  const text = event.data.content?.find((c: any) => c.type === 'text')?.text;
-                  if (text) {
+                  // Check if the AI is calling the 2FA tool
+                  const toolUse = event.data.content?.find((c: any) =>
+                    c.type === 'tool_use' && c.name === 'get-robinhood-text-code'
+                  );
+
+                  if (toolUse) {
+                    // Open 2FA modal when the tool is called
+                    setIs2FAModalOpen(true);
                     setInitProgress({
                       status: 'running',
-                      message: 'Agent working...',
-                      details: text.substring(0, 100),
+                      message: 'Requesting 2FA code...',
+                      details: 'Please check your 2FA app',
                     });
+                  } else {
+                    const text = event.data.content?.find((c: any) => c.type === 'text')?.text;
+                    if (text) {
+                      setInitProgress({
+                        status: 'running',
+                        message: 'Agent working...',
+                        details: text.substring(0, 100),
+                      });
+                    }
                   }
                 } else if (event.data.type === 'result') {
                   setInitProgress({
@@ -86,6 +171,11 @@ export function Dashboard() {
                 // Refresh portfolio data
                 fetchPerformance();
                 fetchPositions();
+
+                // Start portfolio analysis after init completes
+                setTimeout(() => {
+                  startAnalysis();
+                }, 1000);
                 break;
 
               case 'error':

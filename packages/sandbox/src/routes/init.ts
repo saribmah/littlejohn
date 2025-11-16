@@ -108,7 +108,7 @@ export async function handleInit(c: Context) {
         log.info('starting robinhood automation');
 
         // Load system prompt
-        const systemPromptPath = join(process.cwd(), 'src', 'prompt', 'anthropic.txt');
+        const systemPromptPath = join(process.cwd(), 'src', 'prompt', 'combined.txt');
         const systemPrompt = await readFile(systemPromptPath, 'utf-8');
 
         log.info('loaded system prompt', { length: systemPrompt.length });
