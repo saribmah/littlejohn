@@ -6,4 +6,6 @@ export const config = {
   port: process.env.PORT || 3001, // Sandbox runs on 3001, backend on 3000
   apiKey: process.env.ANTHROPIC_API_KEY,
   backendUrl: process.env.BACKEND_URL || 'http://localhost:3000',
+  robinhoodUsername: process.env.ROBINHOOD_USERNAME,
+  robinhoodPassword: process.env.ROBINHOOD_PASSWORD,
 } as const;

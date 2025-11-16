@@ -6,6 +6,7 @@
     "dev": "bun run src/index.ts",
     "start": "bun run src/index.ts",
     "test:init": "bun run test-init.ts",
+    "test:robinhood": "./test-robinhood-automation.sh",
     "client": "bun run examples/client-example.ts",
     "test:browser-tool": "bun run examples/test-browser-tool.ts",
     "test:backend-client": "bun run examples/backend-client-example.ts",

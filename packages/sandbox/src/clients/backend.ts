@@ -121,6 +121,42 @@ export class BackendClient {
 
     return response.json();
   }
+
+  /**
+   * Get 2FA code for a user
+   * @param userId - User ID
+   * @param use - If true, marks the 2FA code as used (enabled=false)
+   */
+  async get2FACode(userId: string, use: boolean = false): Promise<{ code: string | null; enabled: boolean }> {
+    const url = new URL(`${this.baseUrl}/api/two-factor/user/${userId}`);
+    if (use) {
+      url.searchParams.set('use', 'true');
+    }
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.apiKey && { 'X-API-Key': this.apiKey }),
+        'X-User-Id': userId,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch 2FA code: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.twoFactor) {
+      return { code: null, enabled: false };
+    }
+
+    return {
+      code: data.twoFactor.code,
+      enabled: data.twoFactor.enabled
+    };
+  }
 }
 
 // Export a default instance

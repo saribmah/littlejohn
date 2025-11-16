@@ -5,7 +5,7 @@
 The sandbox now provides **two separate MCP servers** for different functionality domains:
 
 1. **Browser MCP Server** - Browser automation and web interaction
-2. **Portfolio MCP Server** - Portfolio and position management
+2. **Portfolio MCP Server** - Portfolio management, position updates, and Robinhood credentials
 
 ## Directory Structure
 
@@ -62,13 +62,15 @@ import { browserMcpServer } from './mcp';
 ### Portfolio MCP Server
 
 **Name**: `portfolio-tools`
-**Purpose**: Portfolio and position management
-**Tools**: 2 portfolio management tools
+**Purpose**: Portfolio management, position updates, and Robinhood credentials
+**Tools**: 4 portfolio management tools
 
 ```typescript
 import { portfolioMcpServer } from './mcp';
 
 // Server provides:
+// - get-robinhood-credentials
+// - get-robinhood-text-code
 // - update-user-portfolio
 // - update-user-positions
 ```
@@ -81,15 +83,17 @@ When the AI agent connects via `/message` endpoint, it has access to **both** MC
 // routes/message.ts
 mcpServers: {
   'browser-tools': browserMcpServer,      // 10 browser tools
-  'portfolio-tools': portfolioMcpServer,  // 2 portfolio tools
+  'portfolio-tools': portfolioMcpServer,  // 4 portfolio tools
 }
 ```
 
 This means the AI can:
-1. **Navigate to Robinhood** using `browser-navigate`
-2. **Interact with the UI** using `browser-click`, `browser-type`, etc.
-3. **Extract portfolio data** using `browser-get-dom-snapshot`
-4. **Update backend** using `update-user-portfolio` and `update-user-positions`
+1. **Get login credentials** using `get-robinhood-credentials`
+2. **Navigate to Robinhood** using `browser-navigate`
+3. **Interact with the UI** using `browser-click`, `browser-type`, etc.
+4. **Handle 2FA** using `get-robinhood-text-code` (with automatic retry)
+5. **Extract portfolio data** using `browser-get-dom-snapshot`
+6. **Update backend** using `update-user-portfolio` and `update-user-positions`
 
 ## Benefits of Separate Servers
 

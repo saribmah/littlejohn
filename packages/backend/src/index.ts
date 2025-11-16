@@ -11,6 +11,8 @@ import { agentRoutes } from './features/agent';
 import { brokersRoutes } from './features/brokers';
 import { newsRoutes } from './features/news';
 import { onboardingRoutes } from './features/onboarding';
+import { twoFactorRoutes } from './features/two-factor';
+import { tradeRoutes } from './features/trades';
 
 const app = new Hono();
 
@@ -23,6 +25,8 @@ app.route('/health', healthRoutes);
 app.route('/api/auth', authRoutes);
 app.route('/api/onboarding', onboardingRoutes);
 app.route('/api/portfolio', portfolioRoutes);
+app.route('/api/two-factor', twoFactorRoutes);
+app.route('/api/trades', tradeRoutes);
 app.route('/api/agent', agentRoutes);
 app.route('/api/brokers', brokersRoutes);
 app.route('/api/news', newsRoutes);

@@ -1,9 +1,23 @@
 /**
  * Test script for /init endpoint
- * 
+ *
+ * The /init endpoint now:
+ * 1. Launches browser with stealth mode
+ * 2. Initializes tab management
+ * 3. Executes Robinhood automation:
+ *    - Navigates to robinhood.com
+ *    - Retrieves credentials using get-robinhood-credentials tool
+ *    - Logs in to Robinhood
+ *    - Scrapes portfolio and position data
+ *    - Updates backend using update-user-portfolio and update-user-positions tools
+ * 4. Returns updated portfolio and positions
+ *
  * Usage:
- *   1. Start the sandbox server: bun run dev
- *   2. In another terminal: bun run test-init.ts
+ *   1. Ensure ROBINHOOD_USERNAME and ROBINHOOD_PASSWORD are set in .env
+ *   2. Start the sandbox server: bun run dev
+ *   3. In another terminal: bun run test-init.ts
+ *
+ * Note: This will take longer than before due to the automation process.
  */
 
 const BASE_URL = 'http://localhost:3001'; // Sandbox runs on 3001, backend on 3000
@@ -78,8 +92,9 @@ async function testInit() {
     }
 
     console.log('✅ Initialization successful!\n');
-    console.log('📊 Response:');
+    console.log('📊 Full Response:');
     console.log(JSON.stringify(data, null, 2));
+    console.log('\n💡 The /init endpoint has completed Robinhood automation.');
 
     if (data.session) {
       console.log('\n📋 Session Summary:');
@@ -129,6 +144,10 @@ async function testInit() {
     }
 
     console.log('\n✨ Test completed successfully!');
+    console.log('\n📌 What happened:');
+    console.log('  1. Browser launched with stealth mode');
+    console.log('  2. Claude agent executed Robinhood automation');
+    console.log('  3. Portfolio and positions updated in backend');
     console.log('\n⚠️  Note: Browser is still running. Kill it manually or restart the server.');
     
   } catch (error) {

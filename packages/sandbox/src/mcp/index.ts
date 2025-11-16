@@ -22,3 +22,5 @@ export { browserSwitchTabTool } from './tools/browser-switch-tab';
 // Export portfolio tools
 export { updateUserPortfolioTool } from './portfolio-tools/update-user-portfolio';
 export { updateUserPositionsTool } from './portfolio-tools/update-user-positions';
+export { getRobinhoodCredentialsTool } from './portfolio-tools/get-robinhood-credentials';
+export { getRobinhoodTextCodeTool } from './portfolio-tools/get-robinhood-text-code';

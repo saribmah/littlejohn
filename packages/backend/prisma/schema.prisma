@@ -23,6 +23,8 @@ model User {
   sessions          Session[]
   onboardingProfile OnboardingProfile?
   portfolio         Portfolio?
+  twoFactorAuth     TwoFactorAuth?
+  trades            Trade[]
 
   @@map("user")
 }
@@ -71,6 +73,19 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@map("verification")
+}
+
+model TwoFactorAuth {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  code      String   // The 2FA code/secret
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("two_factor_auth")
 }
 
 model OnboardingProfile {
@@ -153,4 +168,39 @@ model Position {
 
   @@unique([portfolioId, symbol])
   @@map("position")
+}
+
+enum TradeAction {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+model Trade {
+  id        String      @id @default(cuid())
+  userId    String
+
+  // Trade details
+  symbol    String      // Ticker symbol (e.g., AAPL, TSLA)
+  amount    Float       // Number of shares
+  action    TradeAction // BUY or SELL
+  status    TradeStatus @default(PENDING)
+
+  // Optional metadata
+  price     Float?      // Price per share (optional)
+  total     Float?      // Total value (optional)
+  note      String?     // Optional note
+
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("trade")
 }

@@ -42,9 +42,11 @@ src/mcp/
 ### 2. Portfolio MCP Server
 
 **Name**: `portfolio-tools`
-**Purpose**: Portfolio and position management
+**Purpose**: Portfolio management, position updates, and Robinhood credentials
 
 **Tools**:
+- `get-robinhood-credentials` - Get Robinhood login credentials
+- `get-robinhood-text-code` - Get 2FA code with retry logic
 - `update-user-portfolio` - Update portfolio performance metrics
 - `update-user-positions` - Update all portfolio positions
 
@@ -67,11 +69,13 @@ const portfolioServer = portfolioMcpServer;
 ```typescript
 import {
   browserNavigateTool,
+  getRobinhoodCredentialsTool,
   updateUserPortfolioTool,
 } from './mcp';
 
 // Use individual tools directly
 await browserNavigateTool.handler({ url: 'https://example.com' });
+await getRobinhoodCredentialsTool.handler({});
 ```
 
 ## Why Separate Servers?
