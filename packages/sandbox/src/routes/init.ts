@@ -114,7 +114,11 @@ export async function handleInit(c: Context) {
         log.info('loaded system prompt', { length: systemPrompt.length });
 
         // Execute Claude query with streaming
-        const userPrompt = `Go to robinhood.com/login and login by grabbing the credentials from the tool call. Use the "send text" option when prompted after the login and then use the tool to get the code for 2fa, and then try to update the user portfolio and positions by looking at the user portfolio on the page. The userId is "${userId}".`;
+        const userPrompt = `Go to robinhood.com/login and login by grabbing the credentials from the tool call.
+         Use the "send text" option when prompted after the login and then use the tool to get the code for 2fa to use during the login. 
+         In some cases you might already be logged in, so you can skip login 
+         Try to update the user portfolio and positions by looking at the user portfolio on the page.
+         The userId is "${userId}".`;
 
         log.info('executing claude query', { promptLength: userPrompt.length });
 
